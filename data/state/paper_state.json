@@ -1,0 +1,22 @@
+{
+  "cash": 9741.140014648438,
+  "positions": {
+    "AAPL": {
+      "quantity": 1,
+      "avg_price": 258.8599853515625
+    }
+  },
+  "last_trade_time": "2026-04-07T05:37:29+00:00",
+  "trades": [
+    {
+      "symbol": "AAPL",
+      "side": "buy",
+      "quantity": 1,
+      "price": 258.8599853515625,
+      "submitted_at": "2026-04-07T05:37:29+00:00",
+      "filled_at": "2026-04-07T05:37:29+00:00",
+      "status": "filled"
+    }
+  ],
+  "last_updated": "2026-04-07T05:37:29+00:00"
+}

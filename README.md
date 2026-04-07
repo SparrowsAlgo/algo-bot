@@ -1,47 +1,85 @@
-# 📈 Algo-Bot: Automated Quantitative Trading Engine
+# Algo Bot (Beginner Framework)
 
-A modular, Python-based algorithmic trading system. This project includes live paper-trading execution, historical backtesting, and a strategy optimizer.
+A clean, beginner-friendly algorithmic trading framework built around one shared flow:
 
-## 📂 Project Structure
-* `main.py` - The central orchestrator that runs the bot.
-* `backtester.py` - The "Time Machine" to test strategies against historical data.
-* `optimizer.py` - A grid-search tool to find the most profitable moving average parameters.
-* `strategies/` - Folder containing the mathematical decision-making logic.
-* `execution/` - Folder containing the API connection to the broker.
+`data -> strategy -> risk -> execution -> logging`
 
-## ⚙️ Setup Instructions for New Machines
+This version is intentionally simple and runs in **paper mode** only (no live orders).
 
-**1. Install Python Dependencies**
-Open your terminal and run:
+## What it includes
+
+- Historical data download with `yfinance`
+- A simple moving-average strategy that returns `BUY`, `SELL`, or `HOLD`
+- Basic risk checks (`can_trade`)
+- Fixed position sizing
+- Simulated paper broker execution
+- Portfolio state and an append-only trade log on disk
+
+## Project layout
+
+Core package lives in `src/algo_bot`:
+
+- `runners.py` — orchestration for CLI modes (backtest / paper / status)
+- `main.py` — optional entry; same behavior as `paper` mode
+- `config/settings.py` — env-based configuration
+- `data/` — market data + features
+- `strategies/` — strategy interfaces + implementations
+- `risk/` — risk checks and position sizing
+- `execution/` — broker interface + paper broker
+- `portfolio/` — positions and portfolio state
+- `persistence/` — JSON state for paper mode
+- `backtest/` — backtest loop and metrics
+- `monitoring/` — logger setup
+
+## Setup
+
+1. Install dependencies:
+
 ```bash
 python -m pip install -r requirements.txt
-python -m pip install yfinance python-dotenv
+```
 
-2. Configure the API Keys (CRITICAL)
-Do NOT upload your keys to GitHub.
+2. Create your environment file from the example:
 
-Create a new file in the main folder and name it exactly .env
-
-Add your Alpaca Paper Trading keys to the file like this:
-
-Plaintext
-ALPACA_API_KEY=YourKeyHere
-ALPACA_SECRET_KEY=YourSecretHere
-(Note: Ensure .env is listed inside your .gitignore file so it remains untracked).
-
-🚀 How to Run the Tools
-Run the Live Paper Trader: python main.py
-
-Test the Strategy Historically: python backtester.py
-
-Find the Best Strategy Parameters: python optimizer.py
-
-
-### Step 3: Save to the Vault
-Once you have run the optimizer and saved both files, it is time to push this massive upgrade to GitHub so your partner can see it.
-
-Run these three commands in your terminal:
 ```bash
-git add .
-git commit -m "Added SMA Grid Search Optimizer and Project README"
-git push
+copy .env.example .env
+```
+
+3. Optional: edit `.env` (symbol, trade size, cash, state file path, etc.).
+
+## Main commands (recommended)
+
+From the repo root, **no `PYTHONPATH` needed** — `scripts/run.py` adds `src/` for you:
+
+```bash
+python scripts/run.py backtest
+python scripts/run.py paper
+python scripts/run.py status
+```
+
+### What each mode means
+
+| Mode | What it does |
+|------|----------------|
+| **backtest** | Replays **past** prices: loads settings, downloads history, builds features, runs the backtest engine, prints metrics (return, win rate, etc.). Uses the **same** strategy + feature pipeline as paper mode. |
+| **paper** | One **live-style** cycle on **current** data: loads persisted state, fetches recent prices, builds features, gets a signal, runs risk checks, simulates a fill, updates portfolio, saves JSON state, logs the result. Does not send real orders. |
+| **status** | **Read-only**: loads `paper_state.json` and prints cash, open positions, and trade history (audit trail). |
+
+If you run `python scripts/run.py` with no arguments, or an unknown mode, you get a short usage message.
+
+### Alternative entry (same as `paper`)
+
+If you prefer module style:
+
+```powershell
+$env:PYTHONPATH="src"
+python -m algo_bot.main
+```
+
+Legacy thin wrappers still work: `scripts/run_backtest.py`, `scripts/run_paper.py`.
+
+## Notes
+
+- This project does not place real live orders.
+- API keys are read from environment variables and are optional in paper mode.
+- Paper portfolio state defaults to `data/state/paper_state.json` (cash, positions, `trades` log).
