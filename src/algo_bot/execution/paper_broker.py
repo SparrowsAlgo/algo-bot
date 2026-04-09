@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from algo_bot.execution.broker_base import BrokerBase
+from algo_bot.trading.trade_plan import TradePlan
 
 
 class PaperBroker(BrokerBase):
@@ -36,6 +37,21 @@ class PaperBroker(BrokerBase):
         }
         self.orders.append(order)
         return order
+
+    def open_trade(self, plan: TradePlan) -> dict[str, Any]:
+        """Open a paper trade from a TradePlan (instant fill)."""
+        fill = self.submit_order(plan.symbol, "BUY", plan.quantity, plan.entry_price)
+        fill["order_type"] = "open"
+        fill["stop_loss"] = plan.stop_loss
+        fill["take_profit"] = plan.take_profit
+        return fill
+
+    def close_trade(self, symbol: str, quantity: int, price: float, reason: str) -> dict[str, Any]:
+        """Close a paper position (instant fill)."""
+        fill = self.submit_order(symbol, "SELL", quantity, price)
+        fill["order_type"] = "close"
+        fill["exit_reason"] = reason
+        return fill
 
     def get_positions(self) -> List[dict]:
         return [{"symbol": symbol, "quantity": qty} for symbol, qty in self._positions.items() if qty > 0]

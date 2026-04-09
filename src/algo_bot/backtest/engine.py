@@ -6,6 +6,7 @@ import pandas as pd
 
 from algo_bot.backtest.metrics import compute_metrics
 from algo_bot.risk.checks import can_trade
+from algo_bot.trading.position_manager import should_exit_long
 
 
 class BacktestEngine:
@@ -13,6 +14,7 @@ class BacktestEngine:
 
     def run(
         self,
+        symbol: str,
         data: pd.DataFrame,
         strategy,
         quantity: int,
@@ -25,13 +27,31 @@ class BacktestEngine:
         cash = float(starting_cash)
         held_qty = 0
         entry_price = 0.0
+        stop_loss: float | None = None
+        take_profit: float | None = None
         trade_pnls: list[float] = []
         daily_pnl = 0.0
 
         for i in range(2, len(data)):
             window = data.iloc[: i + 1]
-            signal = strategy.generate_signal(window)
             price = float(window["Close"].iloc[-1])
+
+            # If holding, exit on stop/target first.
+            if held_qty > 0:
+                exit_decision = should_exit_long(price, stop_loss, take_profit)
+                if exit_decision.should_exit:
+                    cash += price * held_qty
+                    pnl = (price - entry_price) * held_qty
+                    trade_pnls.append(pnl)
+                    daily_pnl += pnl
+                    held_qty = 0
+                    entry_price = 0.0
+                    stop_loss = None
+                    take_profit = None
+                    continue
+
+            decision = strategy.decide(symbol, window)
+            signal = decision.action
 
             side = "HOLD"
             if signal == "BUY" and held_qty == 0:
@@ -55,12 +75,16 @@ class BacktestEngine:
                 cash -= price * quantity
                 held_qty = quantity
                 entry_price = price
+                stop_loss = decision.stop_loss
+                take_profit = decision.take_profit
             elif side == "SELL":
                 cash += price * held_qty
                 pnl = (price - entry_price) * held_qty
                 trade_pnls.append(pnl)
                 daily_pnl += pnl
                 held_qty = 0
+                stop_loss = None
+                take_profit = None
 
         final_price = float(data["Close"].iloc[-1])
         final_equity = cash + (held_qty * final_price)

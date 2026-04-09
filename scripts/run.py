@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Single entry point: backtest | paper | status."""
+"""Single entry point: backtest | paper | status | scan | monitor."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ _SRC = Path(__file__).resolve().parents[1] / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-from algo_bot.runners import run_backtest_mode, run_paper_mode, run_status_mode
+from algo_bot.runners import run_backtest_mode, run_monitor_mode, run_paper_mode, run_scan_mode, run_status_mode
 
 USAGE = """
 Algo Bot - choose a mode:
@@ -18,11 +18,15 @@ Algo Bot - choose a mode:
   python scripts/run.py backtest   Run a historical backtest and print metrics
   python scripts/run.py paper      Run one simulated paper-trading cycle
   python scripts/run.py status     Show cash, positions, and trade history
+  python scripts/run.py scan       Scan watchlist and print/save a report (no trades)
+  python scripts/run.py monitor    Check open positions and exit if stop/target hit
 
 Examples:
   python scripts/run.py backtest
   python scripts/run.py paper
   python scripts/run.py status
+  python scripts/run.py scan
+  python scripts/run.py monitor
 """.strip()
 
 
@@ -38,6 +42,10 @@ def main() -> None:
         run_paper_mode()
     elif mode == "status":
         run_status_mode()
+    elif mode == "scan":
+        run_scan_mode()
+    elif mode == "monitor":
+        run_monitor_mode()
     else:
         print(f"Unknown mode: {sys.argv[1]!r}\n")
         print(USAGE)

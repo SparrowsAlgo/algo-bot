@@ -21,6 +21,8 @@ class JsonStateStore:
             "positions": {},
             "last_trade_time": None,
             "trades": [],
+            "realized_pnl": 0.0,
+            "last_action": None,
             "last_updated": self._now_iso(),
         }
         if not self.path.exists():
@@ -42,6 +44,8 @@ class JsonStateStore:
             "positions": payload.get("positions", {}),
             "last_trade_time": payload.get("last_trade_time"),
             "trades": trades,
+            "realized_pnl": float(payload.get("realized_pnl", 0.0)),
+            "last_action": payload.get("last_action"),
             "last_updated": payload.get("last_updated", self._now_iso()),
         }
 
@@ -56,6 +60,8 @@ class JsonStateStore:
             "positions": state.get("positions", {}),
             "last_trade_time": state.get("last_trade_time"),
             "trades": trades,
+            "realized_pnl": float(state.get("realized_pnl", 0.0)),
+            "last_action": state.get("last_action"),
             "last_updated": self._now_iso(),
         }
         self.path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
