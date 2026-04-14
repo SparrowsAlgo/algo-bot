@@ -94,40 +94,39 @@ class PortfolioManager:
         self.last_trade_time = now
         self.last_action = f"OPEN:{symbol}"
 
-    def close_position(self, symbol: str, fill: dict[str, Any], reason: str) -> float:
-        """Close a position and return realized PnL."""
-        if fill.get("status") != "filled":
-            return 0.0
+    def close_position(self, symbol: str, exit_price: float, reason: str) -> float:
+        position = self.positions[symbol]
+        now = datetime.now(timezone.utc)
 
-        current = self.positions.get(symbol)
-        if current is None or current.quantity <= 0:
-            return 0.0
-
-        qty = int(fill.get("quantity") or 0)
-        price = float(fill.get("price") or 0.0)
-        if qty <= 0 or price <= 0:
-            return 0.0
-
-        sell_qty = min(qty, current.quantity)
-        proceeds = sell_qty * price
-        pnl = (price - current.avg_price) * sell_qty
-
-        now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-        self.cash += proceeds
-        self.daily_pnl += pnl
+        entry_value = position.avg_price * position.quantity
+        exit_value = exit_price * position.quantity
+        pnl = exit_value - entry_value
+        pnl_pct = pnl / entry_value if entry_value else 0.0
+        holding_seconds = None
+        if position.opened_at:
+            holding_seconds = int((now - position.opened_at).total_seconds())
+        trade = {
+            "symbol": symbol,
+            "side": "buy",
+            "entry_price": position.avg_price,
+            "exit_price": exit_price,
+            "quantity": position.quantity,
+            "entry_time": position.opened_at.isoformat() if position.opened_at else None,
+            "exit_time": now.isoformat(),
+            "holding_seconds": holding_seconds,
+            "pnl": pnl,
+            "pnl_pct": pnl_pct,
+            "exit_reason": reason,
+            "score": position.score,
+            "reasons": position.reasons,
+            "status": "closed",
+        }
+        self.trades.append(trade)
         self.realized_pnl += pnl
+        del self.positions[symbol]
+        self.last_action = f"closed {symbol} ({reason})"
 
-        current.quantity -= sell_qty
-        current.realized_pnl += pnl
-        current.last_updated = now
-        if current.quantity == 0:
-            self.positions.pop(symbol, None)
-        else:
-            self.positions[symbol] = current
-
-        self.last_trade_time = now
-        self.last_action = f"CLOSE:{symbol}:{reason}"
-        return float(pnl)
+        return pnl
 
     def append_trade(self, trade: dict[str, Any]) -> None:
         """Append one trade to the event log (audit trail)."""

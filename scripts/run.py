@@ -46,6 +46,28 @@ def main() -> None:
         run_scan_mode()
     elif mode == "monitor":
         run_monitor_mode()
+    elif mode == "report":
+        from algo_bot.analytics.performance import compute_performance
+        from algo_bot.reporting.performance_report import (
+            format_performance_report,
+            save_performance_report,
+        )
+        from algo_bot.persistence.json_state_store import JsonStateStore
+        from algo_bot.config.settings import load_settings
+
+        settings = load_settings()
+
+        store = JsonStateStore()
+        state = store.load(default_cash=settings.starting_cash)
+
+        trades = state.get("trades", [])
+
+        metrics = compute_performance(trades)
+
+        print(format_performance_report(metrics))
+
+        path = save_performance_report(metrics)
+        print(f"Saved report: {path}")
     else:
         print(f"Unknown mode: {sys.argv[1]!r}\n")
         print(USAGE)
